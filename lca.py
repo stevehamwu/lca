@@ -16,13 +16,12 @@ class QA(object):
 		self.N = len(self.candidates)
 
 	def getQWords(self):
-		#return jb.lcut(self.query)
-		return jieba.analyse.extract_tags(self.query, 5)
+		return(jieba.analyse.extract_tags(self.query, 5))
 
 	def getCWords(self):
 		cwords = []
 		for candidate in self.candidates:
-			cwords.append(jieba.analyse.extract_tags(candidate, 15))
+			cwords.append(jieba.analyse.extract_tags(candidate, 20))
 		return cwords
 
 	def getNW(self):
@@ -55,7 +54,7 @@ class QA(object):
 	def idf(self, word):
 		if self.nw[word] == 0:
 			return 1
-		growth = math.log(self.N/self.nw[word])/5
+		growth = math.log(self.N/self.nw[word], 10)/5
 		if growth < 1:
 			return growth
 		return 1
@@ -72,7 +71,7 @@ class QA(object):
 	def getF(self, concept):
 		f = 1
 		for word in self.qwords:
-			f = f * math.pow((0.01 + self.co_degree(concept, word)), self.idf(word))
+			f = f * math.pow(0.01 + self.co_degree(concept, word), self.idf(word))
 		return f
 
 	def getFCQ(self):
@@ -97,25 +96,30 @@ def read():
 			query, candidates, answer = doc.split('@@@@@@@@@@\n')
 			id, query = query.split('\n', 1)
 			candidates = list(candidates.split('\n'))
-			qalist.append(QA(id, query, candidates, answer.strip()))
+			qalist.append(QA(id, query, candidates, answer))
 		return qalist
 
-def __main__():
+def main(topK=1, matchmode='precise'):
 	qalist = read()
 	count = 0
 	for qa in qalist:
+		print(qa.N)
 		fcq = qa.getFCQ()
-		max_fcq = max(fcq.items(), key=lambda x: x[1])
-		print('answer:', qa.answer, ' max_lca: ', max_fcq, qa.answer == max_fcq[0])
-		if qa.answer == max_fcq[0]:
-			count = count + 1
+		max_fcq = sorted(fcq.items(), key=lambda x:x[1], reverse=True)[0:topK]
+		correct = False
+		for mf in max_fcq:
+			if matchmode == 'precise':
+				if qa.answer.strip() == mf[0].strip():
+					correct = True
+					count = count + 1
+					break
+			elif matchmode == 'approximate':
+				if qa.answer.strip().__contains__(mf[0].strip()) or mf[0].strip().__contains__(qa.answer.strip()):
+					correct = True
+					count = count + 1
+					break
+		print('answer:', qa.answer,'top ', topK, 'max_lca: ', max_fcq, correct)
 
 	print('Accuracy: ', count/len(qalist))
-	# for qa in qalist:
-	# 	cwords = qa.getCWords()
-	# 	print(len(cwords))
-		# ws = jb.cut_for_search(qa.query)
-		# for w in ws:
-		# 	print(w)
 
-__main__()
+main(1)
