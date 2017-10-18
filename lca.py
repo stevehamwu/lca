@@ -39,34 +39,40 @@ class QA(object):
 
 	def getNCW(self, concept, word):
 		count = 0
-		for cword in self.cwords:
-			if (word in cword) and (concept in cword):
-				count = count + 1
+		for sentence in self.cwords:
+			wflag = False
+			cflag = False
+			for cword in sentence:
+				if cword.__contains__(word):
+					wflag = True
+				if cword.__contains__(concept):
+					cflag = True
+				if wflag and cflag:
+					count = count + 1
+					break
 		return count
 
 	def countWF(self, word):
 		count = 0
-		for cword in self.cwords:
-			if word in cword:
-				count = count + 1
+		for sentence in self.cwords:
+			for cword in sentence:
+				if cword.__contains__(word):
+					count = count + 1
+					break
 		return count
 
 	def idf(self, word):
 		if self.nw[word] == 0:
 			return 1
 		growth = math.log(self.N/self.nw[word], 10)/5
-		if growth < 1:
-			return growth
-		return 1
+		return min(1, growth)
 
 	def En(self, concept, word):
 		return self.nw[word]*self.nc[concept]/self.N
 
 	def co_degree(self, concept, word):
-		co_occur = (self.getNCW(word, concept)-self.En(concept, word)-1)/self.nc[concept]
-		if co_occur > 0:
-			return co_occur
-		return 0
+		co_occur = (abs(self.getNCW(word, concept) - self.En(concept, word)) - 1)/self.nc[concept]
+		return max(co_occur, 0)
 
 	def getF(self, concept):
 		f = 1
@@ -95,7 +101,7 @@ def read():
 		for doc in docs:
 			query, candidates, answer = doc.split('@@@@@@@@@@\n')
 			id, query = query.split('\n', 1)
-			candidates = list(candidates.split('\n'))
+			candidates = list(candidates.split('\n', candidates.count('\n')-1))
 			qalist.append(QA(id, query, candidates, answer))
 		return qalist
 
@@ -122,4 +128,4 @@ def main(topK=1, matchmode='precise'):
 
 	print('Accuracy: ', count/len(qalist))
 
-main(1)
+main(5, 'precise')

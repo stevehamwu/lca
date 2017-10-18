@@ -71,13 +71,13 @@ class QA(object):
 		return self.nw[word]*self.nc[concept]/self.N
 
 	def co_degree(self, concept, word):
-		co_occur = (self.getNCW(word, concept) - self.En(concept, word) - 1)/self.nc[concept]
+		co_occur = (abs(self.getNCW(word, concept) - self.En(concept, word)) - 1)/self.nc[concept]
 		return max(co_occur, 0)
 
 	def getF(self, concept):
 		f = 1
 		for word in self.qwords:
-			f = f * math.pow((0.01 + self.co_degree(concept, word)), self.idf(word))
+			f = f * math.pow(0.01 + self.co_degree(concept, word), self.idf(word))
 		return f
 
 	def getFCQ(self):
